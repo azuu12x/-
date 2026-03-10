@@ -59,7 +59,7 @@ function render() {
     case 'agencies': main.innerHTML = renderSection('agencies'); initChecks(); break;
     case 'service': main.innerHTML = renderSection('service'); break;
     case 'escalation': main.innerHTML = renderSection('escalation'); break;
-    case 'versions': main.innerHTML = renderSection('versions'); initChecks(); break;
+    case 'versions': main.innerHTML = renderSection('versions') + renderOpenTasks(); initChecks(); initOpenTasks(); break;
     case 'partners': main.innerHTML = renderSection('partners'); break;
     case 'contacts': main.innerHTML = renderContacts(); initContacts(); break;
     case 'scenarios': renderScenariosPage(main, id); break;
@@ -598,3 +598,184 @@ async function init() {
   initTheme();
 }
 init();
+
+// ===== OPEN TASKS =====
+const TASKS_KEY = 'elad_open_tasks_v1';
+
+function loadTasks() {
+  try { const s = localStorage.getItem(TASKS_KEY); return s ? JSON.parse(s) : defaultTasks(); } catch(e) { return defaultTasks(); }
+}
+function saveTasks(tasks) {
+  try { localStorage.setItem(TASKS_KEY, JSON.stringify(tasks)); } catch(e) {}
+}
+function defaultTasks() {
+  return [
+    { id: 't1', title: 'בדיקת אינטגרציה עם DPC אחרי עדכון גרסה', status: 'בתהליך', priority: 'גבוהה', against: 'וואלה טורס', contact: 'צחי לוי', notes: 'לבצע end-to-end ב-DPC ולוודא API יוצא תקין', created: '2025-01-08' },
+    { id: 't2', title: 'הגדרת גורם עסקי/שיווק להסלמות שת"פ', status: 'פתוחה', priority: 'בינונית', against: 'פנימי', contact: '', notes: 'חסר ממלא תפקיד בטבלת הסלמה — להשלים', created: '2025-01-07' },
+    { id: 't3', title: 'בחינת שיפור תהליך notice לשותפים לפני שחרור גרסה', status: 'פתוחה', priority: 'נמוכה', against: 'פנימי', contact: 'מיטל בן אהרון', notes: 'כרגע "basic notice" — לשקול מבנה מפורט יותר', created: '2025-01-06' }
+  ];
+}
+
+function taskUID() { return 't' + Date.now(); }
+
+function priorityDot(p) {
+  const c = p === 'גבוהה' ? '#ef4444' : p === 'בינונית' ? '#eab308' : '#22c55e';
+  return `<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${c};flex-shrink:0;margin-top:5px"></span>`;
+}
+
+function statusBadge(s) {
+  const map = {
+    'פתוחה':  'background:rgba(234,179,8,.15);color:#eab308',
+    'בתהליך': 'background:rgba(91,108,240,.15);color:#8899ff',
+    'תקועה':  'background:rgba(239,68,68,.15);color:#ef4444',
+    'הושלמה': 'background:rgba(34,197,94,.15);color:#22c55e'
+  };
+  const style = map[s] || map['פתוחה'];
+  return `<span style="padding:2px 9px;border-radius:20px;font-size:11.5px;font-weight:700;${style}">${s}</span>`;
+}
+
+function renderOpenTasks() {
+  const tasks = loadTasks();
+  const counts = { total: tasks.length, open: 0, wip: 0, stuck: 0, done: 0 };
+  tasks.forEach(t => {
+    if (t.status==='פתוחה') counts.open++;
+    else if (t.status==='בתהליך') counts.wip++;
+    else if (t.status==='תקועה') counts.stuck++;
+    else if (t.status==='הושלמה') counts.done++;
+  });
+
+  const stats = `
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+      <div style="background:var(--bg-card2);border-radius:8px;padding:7px 14px;font-size:12.5px;display:flex;align-items:center;gap:8px"><span style="font-size:17px;font-weight:800">${counts.total}</span> סה"כ</div>
+      <div style="background:rgba(234,179,8,.1);border-radius:8px;padding:7px 14px;font-size:12.5px;display:flex;align-items:center;gap:8px;color:#eab308"><span style="font-size:17px;font-weight:800">${counts.open}</span> פתוחות</div>
+      <div style="background:rgba(91,108,240,.1);border-radius:8px;padding:7px 14px;font-size:12.5px;display:flex;align-items:center;gap:8px;color:#8899ff"><span style="font-size:17px;font-weight:800">${counts.wip}</span> בתהליך</div>
+      <div style="background:rgba(239,68,68,.1);border-radius:8px;padding:7px 14px;font-size:12.5px;display:flex;align-items:center;gap:8px;color:#ef4444"><span style="font-size:17px;font-weight:800">${counts.stuck}</span> תקועות</div>
+      <div style="background:rgba(34,197,94,.1);border-radius:8px;padding:7px 14px;font-size:12.5px;display:flex;align-items:center;gap:8px;color:#22c55e"><span style="font-size:17px;font-weight:800">${counts.done}</span> הושלמו</div>
+    </div>`;
+
+  const tasksHTML = tasks.length === 0
+    ? `<div style="text-align:center;padding:32px;color:var(--muted)">אין משימות עדיין</div>`
+    : tasks.map(t => `
+      <div class="ot-card" id="ot-card-${t.id}" style="background:var(--bg-card2);border-radius:10px;padding:14px 16px;margin-bottom:10px;border:1px solid var(--border-c)">
+        <div style="display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:start;cursor:pointer" onclick="otToggleEdit('${t.id}')">
+          ${priorityDot(t.priority)}
+          <div>
+            <div style="font-size:14px;font-weight:700;margin-bottom:6px;line-height:1.4">${t.title}</div>
+            <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center">
+              ${statusBadge(t.status)}
+              ${t.against ? `<span style="background:var(--bg-card2);border:1px solid var(--border-c);padding:2px 9px;border-radius:20px;font-size:11.5px;color:var(--muted)">🤝 ${t.against}</span>` : ''}
+              ${t.contact ? `<span style="background:var(--bg-card2);border:1px solid var(--border-c);padding:2px 9px;border-radius:20px;font-size:11.5px;color:var(--muted)">👤 ${t.contact}</span>` : ''}
+              <span style="font-size:11.5px;color:var(--muted)">${t.created}</span>
+            </div>
+            ${t.notes ? `<div style="margin-top:7px;font-size:12.5px;color:var(--muted)">💬 ${t.notes}</div>` : ''}
+          </div>
+          <div style="display:flex;gap:5px">
+            <button onclick="event.stopPropagation();otToggleEdit('${t.id}')" style="background:var(--bg-card2);border:1px solid var(--border-c);border-radius:7px;width:30px;height:30px;cursor:pointer;font-size:14px;color:var(--muted)" title="ערוך">✏️</button>
+            <button onclick="event.stopPropagation();otDelete('${t.id}')" style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:7px;width:30px;height:30px;cursor:pointer;font-size:14px" title="מחק">🗑</button>
+          </div>
+        </div>
+        <div id="ot-edit-${t.id}" style="display:none;border-top:1px solid var(--border-c);margin-top:12px;padding-top:14px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px">
+            <div style="grid-column:1/-1">
+              <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">כותרת</label>
+              <input id="ot-title-${t.id}" value="${t.title}" style="width:100%;background:var(--bg-card);border:1px solid var(--border-c);border-radius:7px;padding:8px 10px;color:var(--fg);font-size:13.5px;font-family:inherit"/>
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">סטטוס</label>
+              <select id="ot-status-${t.id}" style="width:100%;background:var(--bg-card);border:1px solid var(--border-c);border-radius:7px;padding:8px 10px;color:var(--fg);font-size:13.5px;font-family:inherit">
+                ${['פתוחה','בתהליך','תקועה','הושלמה'].map(s=>`<option ${t.status===s?'selected':''}>${s}</option>`).join('')}
+              </select>
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">עדיפות</label>
+              <select id="ot-priority-${t.id}" style="width:100%;background:var(--bg-card);border:1px solid var(--border-c);border-radius:7px;padding:8px 10px;color:var(--fg);font-size:13.5px;font-family:inherit">
+                ${['גבוהה','בינונית','נמוכה'].map(p=>`<option ${t.priority===p?'selected':''}>${p}</option>`).join('')}
+              </select>
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">מול מי</label>
+              <input id="ot-against-${t.id}" value="${t.against}" placeholder="חברה / גורם" style="width:100%;background:var(--bg-card);border:1px solid var(--border-c);border-radius:7px;padding:8px 10px;color:var(--fg);font-size:13.5px;font-family:inherit"/>
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">איש קשר</label>
+              <input id="ot-contact-${t.id}" value="${t.contact}" placeholder="שם + תפקיד" style="width:100%;background:var(--bg-card);border:1px solid var(--border-c);border-radius:7px;padding:8px 10px;color:var(--fg);font-size:13.5px;font-family:inherit"/>
+            </div>
+            <div style="grid-column:1/-1">
+              <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">הערות</label>
+              <textarea id="ot-notes-${t.id}" rows="2" style="width:100%;background:var(--bg-card);border:1px solid var(--border-c);border-radius:7px;padding:8px 10px;color:var(--fg);font-size:13.5px;font-family:inherit;resize:vertical">${t.notes}</textarea>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button onclick="otSave('${t.id}')" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13.5px;font-weight:700;cursor:pointer">💾 שמור</button>
+            <button onclick="otToggleEdit('${t.id}')" style="background:var(--bg-card2);border:1px solid var(--border-c);border-radius:8px;padding:8px 14px;font-size:13.5px;cursor:pointer;color:var(--fg)">ביטול</button>
+          </div>
+        </div>
+      </div>`).join('');
+
+  return `
+    <div class="card" style="margin-top:0">
+      <div class="card-head">📋 משימות פתוחות</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">מעקב ועריכה ישירה של משימות ותהליכים</p>
+      ${stats}
+      <div id="ot-list">${tasksHTML}</div>
+      <button onclick="otAddNew()" style="margin-top:4px;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:13.5px;font-weight:700;cursor:pointer;width:100%">＋ משימה חדשה</button>
+    </div>`;
+}
+
+function initOpenTasks() {
+  window.otToggleEdit = function(id) {
+    const el = document.getElementById(`ot-edit-${id}`);
+    if (!el) return;
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  };
+
+  window.otSave = function(id) {
+    const tasks = loadTasks();
+    const t = tasks.find(x => x.id === id);
+    if (!t) return;
+    t.title    = document.getElementById(`ot-title-${id}`).value.trim() || t.title;
+    t.status   = document.getElementById(`ot-status-${id}`).value;
+    t.priority = document.getElementById(`ot-priority-${id}`).value;
+    t.against  = document.getElementById(`ot-against-${id}`).value.trim();
+    t.contact  = document.getElementById(`ot-contact-${id}`).value.trim();
+    t.notes    = document.getElementById(`ot-notes-${id}`).value.trim();
+    saveTasks(tasks);
+    showToast('נשמר ✓');
+    // re-render just the open tasks section
+    const card = document.getElementById(`ot-card-${id}`);
+    if (card) card.outerHTML = renderOpenTasks().match(new RegExp(`<div class="ot-card" id="ot-card-${id}"[\\s\\S]*?(?=<div class="ot-card"|<button onclick="otAddNew)`))?.[0] || '';
+    // easier: just refresh the entire ot-list
+    const main = document.getElementById('main');
+    const versHTML = renderSection('versions') + renderOpenTasks();
+    main.innerHTML = versHTML;
+    initChecks();
+    initOpenTasks();
+  };
+
+  window.otDelete = function(id) {
+    if (!confirm('למחוק את המשימה?')) return;
+    const tasks = loadTasks().filter(t => t.id !== id);
+    saveTasks(tasks);
+    showToast('נמחק');
+    const main = document.getElementById('main');
+    main.innerHTML = renderSection('versions') + renderOpenTasks();
+    initChecks();
+    initOpenTasks();
+  };
+
+  window.otAddNew = function() {
+    const tasks = loadTasks();
+    const t = { id: taskUID(), title: 'משימה חדשה', status: 'פתוחה', priority: 'בינונית', against: '', contact: '', notes: '', created: new Date().toISOString().split('T')[0] };
+    tasks.unshift(t);
+    saveTasks(tasks);
+    const main = document.getElementById('main');
+    main.innerHTML = renderSection('versions') + renderOpenTasks();
+    initChecks();
+    initOpenTasks();
+    // auto-open edit for new task
+    setTimeout(() => {
+      const el = document.getElementById(`ot-edit-${t.id}`);
+      if (el) el.style.display = 'block';
+    }, 50);
+  };
+}
