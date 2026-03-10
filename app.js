@@ -59,7 +59,7 @@ function render() {
     case 'agencies': main.innerHTML = renderSection('agencies'); initChecks(); break;
     case 'service': main.innerHTML = renderSection('service'); break;
     case 'escalation': main.innerHTML = renderSection('escalation'); break;
-    case 'versions': main.innerHTML = renderSection('versions') + renderOpenTasks(); initChecks(); initOpenTasks(); break;
+    case 'versions': main.innerHTML = renderOpenTasks() + renderSection('versions'); initChecks(); initOpenTasks(); break;
     case 'partners': main.innerHTML = renderSection('partners'); break;
     case 'contacts': main.innerHTML = renderContacts(); initContacts(); break;
     case 'scenarios': renderScenariosPage(main, id); break;
@@ -746,7 +746,7 @@ function initOpenTasks() {
     if (card) card.outerHTML = renderOpenTasks().match(new RegExp(`<div class="ot-card" id="ot-card-${id}"[\\s\\S]*?(?=<div class="ot-card"|<button onclick="otAddNew)`))?.[0] || '';
     // easier: just refresh the entire ot-list
     const main = document.getElementById('main');
-    const versHTML = renderSection('versions') + renderOpenTasks();
+    const versHTML = renderOpenTasks() + renderSection('versions');
     main.innerHTML = versHTML;
     initChecks();
     initOpenTasks();
@@ -758,7 +758,7 @@ function initOpenTasks() {
     saveTasks(tasks);
     showToast('נמחק');
     const main = document.getElementById('main');
-    main.innerHTML = renderSection('versions') + renderOpenTasks();
+    main.innerHTML = renderOpenTasks() + renderSection('versions');
     initChecks();
     initOpenTasks();
   };
@@ -769,7 +769,7 @@ function initOpenTasks() {
     tasks.unshift(t);
     saveTasks(tasks);
     const main = document.getElementById('main');
-    main.innerHTML = renderSection('versions') + renderOpenTasks();
+    main.innerHTML = renderOpenTasks() + renderSection('versions');
     initChecks();
     initOpenTasks();
     // auto-open edit for new task
