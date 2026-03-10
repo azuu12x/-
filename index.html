@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>מרכז ידע — ביטוח נסיעות שת״פים</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- Mobile menu button -->
+  <button id="menu-btn" aria-label="פתח תפריט">☰ תפריט</button>
+  <div id="overlay"></div>
+
+  <!-- Sidebar nav -->
+  <nav id="nav" aria-label="ניווט ראשי">
+    <div class="nav-brand">
+      <span class="nav-brand-icon">✈️</span>
+      <div>
+        <div class="nav-brand-title">מרכז ידע</div>
+        <div class="nav-brand-sub">ביטוח נסיעות שת״פים</div>
+      </div>
+    </div>
+
+    <div class="nav-search">
+      <div class="nav-search-wrap">
+        <input type="search" id="nav-search-input" placeholder="חיפוש מהיר..." aria-label="חיפוש">
+        <span class="nav-search-icon">🔍</span>
+      </div>
+    </div>
+
+    <ul>
+      <li class="nav-item"><a href="#home" data-page="home"><span class="nav-icon">🏠</span>דף בית</a></li>
+      <li class="nav-item"><a href="#agencies" data-page="agencies"><span class="nav-icon">🏢</span>סוכנויות</a></li>
+      <li class="nav-item"><a href="#service" data-page="service"><span class="nav-icon">📞</span>שירות ומענה</a></li>
+      <li class="nav-item"><a href="#escalation" data-page="escalation"><span class="nav-icon">🆘</span>הסלמה</a></li>
+      <li class="nav-item"><a href="#versions" data-page="versions"><span class="nav-icon">🔧</span>ניהול גרסאות</a></li>
+      <li class="nav-item"><a href="#partners" data-page="partners"><span class="nav-icon">🔗</span>שת״פים</a></li>
+      <li class="nav-item"><a href="#contacts" data-page="contacts"><span class="nav-icon">👥</span>אנשי קשר</a></li>
+      <li class="nav-item"><a href="#scenarios" data-page="scenarios"><span class="nav-icon">🎯</span>תרחישים</a></li>
+      <li class="nav-item"><a href="#quiz" data-page="quiz"><span class="nav-icon">🧠</span>קוויז</a></li>
+      <li class="nav-item"><a href="#progress" data-page="progress"><span class="nav-icon">📊</span>התקדמות</a></li>
+    </ul>
+
+    <div class="nav-progress">
+      <div class="prog-label">התקדמות</div>
+      <div class="prog-track"><div class="prog-bar" id="mini-bar" style="width:0%"></div></div>
+      <div class="prog-pct" id="mini-pct">0%</div>
+    </div>
+
+    <div class="nav-footer">
+      <button class="icon-btn" id="theme-btn" title="ערכת צבעים" aria-label="החלף ערכת צבעים">🌙</button>
+    </div>
+  </nav>
+
+  <!-- Main content -->
+  <main id="main" role="main"></main>
+
+  <!-- Search modal -->
+  <div id="search-modal" role="dialog" aria-modal="true" aria-label="חיפוש">
+    <div class="sm-backdrop"></div>
+    <div class="sm-box">
+      <div class="sm-head">
+        <span>תוצאות חיפוש</span>
+        <button class="icon-btn" id="sm-close" aria-label="סגור">✕</button>
+      </div>
+      <div id="sm-results"></div>
+    </div>
+  </div>
+
+</div>
+<script src="app.js"></script>
+</body>
+</html>
