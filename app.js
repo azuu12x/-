@@ -701,7 +701,8 @@ function statusBadge(s) {
   return `<span style="padding:2px 9px;border-radius:20px;font-size:11.5px;font-weight:700;${style}">${s}</span>`;
 }
 
-function renderOpenTasks() {
+function renderOpenTasks(activeFilter) {
+  activeFilter = activeFilter || 'הכל';
   const tasks = loadTasks();
   const counts = { total: tasks.length, open: 0, wip: 0, stuck: 0, done: 0 };
   tasks.forEach(t => {
@@ -711,18 +712,29 @@ function renderOpenTasks() {
     else if (t.status==='הושלמה') counts.done++;
   });
 
-  const stats = `
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
-      <div style="background:var(--bg-card2);border-radius:8px;padding:7px 14px;font-size:12.5px;display:flex;align-items:center;gap:8px"><span style="font-size:17px;font-weight:800">${counts.total}</span> סה"כ</div>
-      <div style="background:rgba(234,179,8,.1);border-radius:8px;padding:7px 14px;font-size:12.5px;display:flex;align-items:center;gap:8px;color:#eab308"><span style="font-size:17px;font-weight:800">${counts.open}</span> פתוחות</div>
-      <div style="background:rgba(91,108,240,.1);border-radius:8px;padding:7px 14px;font-size:12.5px;display:flex;align-items:center;gap:8px;color:#8899ff"><span style="font-size:17px;font-weight:800">${counts.wip}</span> בתהליך</div>
-      <div style="background:rgba(239,68,68,.1);border-radius:8px;padding:7px 14px;font-size:12.5px;display:flex;align-items:center;gap:8px;color:#ef4444"><span style="font-size:17px;font-weight:800">${counts.stuck}</span> תקועות</div>
-      <div style="background:rgba(34,197,94,.1);border-radius:8px;padding:7px 14px;font-size:12.5px;display:flex;align-items:center;gap:8px;color:#22c55e"><span style="font-size:17px;font-weight:800">${counts.done}</span> הושלמו</div>
-    </div>`;
+  const filters = [
+    { label: 'הכל',    count: counts.total, color: 'var(--muted)' },
+    { label: 'פתוחה',  count: counts.open,  color: '#eab308' },
+    { label: 'בתהליך', count: counts.wip,   color: '#8899ff' },
+    { label: 'תקועה',  count: counts.stuck, color: '#ef4444' },
+    { label: 'הושלמה', count: counts.done,  color: '#22c55e' },
+  ];
 
-  const tasksHTML = tasks.length === 0
-    ? `<div style="text-align:center;padding:32px;color:var(--muted)">אין משימות עדיין</div>`
-    : tasks.map(t => `
+  const filterBar = `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
+    ${filters.map(f => {
+      const active = activeFilter === f.label;
+      return `<button onclick="otSetFilter('${f.label}')"
+        style="padding:5px 13px;border-radius:20px;font-size:12.5px;font-weight:700;cursor:pointer;border:1px solid ${active ? f.color : 'var(--border-c)'};background:${active ? f.color+'22' : 'var(--bg-card2)'};color:${active ? f.color : 'var(--muted)'}">
+        ${f.label} <span style="opacity:.7">${f.count}</span>
+      </button>`;
+    }).join('')}
+  </div>`;
+
+  const filtered = activeFilter === 'הכל' ? tasks : tasks.filter(t => t.status === activeFilter);
+
+  const tasksHTML = filtered.length === 0
+    ? `<div style="text-align:center;padding:32px;color:var(--muted)">אין משימות בסטטוס זה</div>`
+    : filtered.map(t => `
       <div class="ot-card" id="ot-card-${t.id}" style="background:var(--bg-card2);border-radius:10px;padding:14px 16px;margin-bottom:10px;border:1px solid var(--border-c)">
         <div style="display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:start;cursor:pointer" onclick="otToggleEdit('${t.id}')">
           ${priorityDot(t.priority)}
@@ -783,18 +795,39 @@ function renderOpenTasks() {
     <div class="card" style="margin-top:0">
       <div class="card-head">📋 משימות פתוחות</div>
       <p style="font-size:13px;color:var(--muted);margin-bottom:14px">מעקב ועריכה ישירה של משימות ותהליכים</p>
-      ${stats}
+      ${filterBar}
       <div id="ot-list">${tasksHTML}</div>
       <button onclick="otAddNew()" style="margin-top:4px;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:13.5px;font-weight:700;cursor:pointer;width:100%">＋ משימה חדשה</button>
     </div>`;
 }
 
 function initOpenTasks() {
+  let currentFilter = 'הכל';
+
+  window.otSetFilter = function(f) {
+    currentFilter = f;
+    const main = document.getElementById('main');
+    main.innerHTML = renderOpenTasks(currentFilter) + renderSection('versions');
+    initChecks();
+    initOpenTasks();
+    window._otCurrentFilter = currentFilter;
+  };
+
+  // restore filter if exists
+  if (window._otCurrentFilter) currentFilter = window._otCurrentFilter;
+
   window.otToggleEdit = function(id) {
     const el = document.getElementById(`ot-edit-${id}`);
     if (!el) return;
     el.style.display = el.style.display === 'none' ? 'block' : 'none';
   };
+
+  function otRerender() {
+    const main = document.getElementById('main');
+    main.innerHTML = renderOpenTasks(window._otCurrentFilter || 'הכל') + renderSection('versions');
+    initChecks();
+    initOpenTasks();
+  }
 
   window.otSave = function(id) {
     const tasks = loadTasks();
@@ -808,38 +841,23 @@ function initOpenTasks() {
     t.notes    = document.getElementById(`ot-notes-${id}`).value.trim();
     saveTasks(tasks);
     showToast('נשמר ✓');
-    // re-render just the open tasks section
-    const card = document.getElementById(`ot-card-${id}`);
-    if (card) card.outerHTML = renderOpenTasks().match(new RegExp(`<div class="ot-card" id="ot-card-${id}"[\\s\\S]*?(?=<div class="ot-card"|<button onclick="otAddNew)`))?.[0] || '';
-    // easier: just refresh the entire ot-list
-    const main = document.getElementById('main');
-    const versHTML = renderOpenTasks() + renderSection('versions');
-    main.innerHTML = versHTML;
-    initChecks();
-    initOpenTasks();
+    otRerender();
   };
 
   window.otDelete = function(id) {
     if (!confirm('למחוק את המשימה?')) return;
-    const tasks = loadTasks().filter(t => t.id !== id);
-    saveTasks(tasks);
+    saveTasks(loadTasks().filter(t => t.id !== id));
     showToast('נמחק');
-    const main = document.getElementById('main');
-    main.innerHTML = renderOpenTasks() + renderSection('versions');
-    initChecks();
-    initOpenTasks();
+    otRerender();
   };
 
   window.otAddNew = function() {
+    window._otCurrentFilter = 'הכל';
     const tasks = loadTasks();
     const t = { id: taskUID(), title: 'משימה חדשה', status: 'פתוחה', priority: 'בינונית', against: '', contact: '', notes: '', created: new Date().toISOString().split('T')[0] };
     tasks.unshift(t);
     saveTasks(tasks);
-    const main = document.getElementById('main');
-    main.innerHTML = renderOpenTasks() + renderSection('versions');
-    initChecks();
-    initOpenTasks();
-    // auto-open edit for new task
+    otRerender();
     setTimeout(() => {
       const el = document.getElementById(`ot-edit-${t.id}`);
       if (el) el.style.display = 'block';

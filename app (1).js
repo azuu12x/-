@@ -498,12 +498,59 @@ ${DATA.scenarios.map(s => {
 </div>
 <div style="margin-top:24px">
   <button class="btn btn-danger btn-sm" onclick="if(confirm('לאפס הכל?')){resetAll()}">🗑️ איפוס כל ההתקדמות</button>
+</div>
+<div class="card" style="margin-top:20px">
+  <div class="card-head">📲 סנכרון בין מכשירים</div>
+  <p style="font-size:13px;color:var(--muted);margin-bottom:14px">ייצא את כל הנתונים מהמחשב וייבא בנייד (משימות, שת״פים, התקדמות)</p>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <button onclick="syncExport()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:13.5px;font-weight:700;cursor:pointer">📤 ייצא לקובץ</button>
+    <label style="background:var(--bg-card2);border:1px solid var(--border-c);border-radius:8px;padding:9px 18px;font-size:13.5px;font-weight:700;cursor:pointer;color:var(--fg)">
+      📥 ייבא קובץ
+      <input type="file" accept=".json" onchange="syncImport(event)" style="display:none"/>
+    </label>
+  </div>
 </div>`;
 }
 
 window.resetAll = function() {
   progress.modules = []; progress.quizDone = {}; progress.scenarios = []; progress.checks = {};
+  localStorage.removeItem('elad_open_tasks_v1');
+  localStorage.removeItem('elad_negotiations_v1');
   saveProgress(); updateMiniProg(); render(); showToast('אופס!');
+};
+
+window.syncExport = function() {
+  const allKeys = ['elad_v2_progress','elad_open_tasks_v1','elad_negotiations_v1'];
+  const dump = {};
+  allKeys.forEach(k => {
+    const v = localStorage.getItem(k);
+    if (v) dump[k] = v;
+  });
+  const blob = new Blob([JSON.stringify(dump, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'elad_sync_' + new Date().toISOString().split('T')[0] + '.json';
+  a.click();
+  showToast('קובץ יוצא ✓');
+};
+
+window.syncImport = function(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const dump = JSON.parse(e.target.result);
+      Object.entries(dump).forEach(([k, v]) => localStorage.setItem(k, v));
+      // Reload progress into memory
+      loadProgress();
+      render();
+      showToast('יובא בהצלחה ✓');
+    } catch(err) {
+      showToast('שגיאה בייבוא');
+    }
+  };
+  reader.readAsText(file);
 };
 
 // ===== SEARCH =====
@@ -627,9 +674,12 @@ function saveTasks(tasks) {
 }
 function defaultTasks() {
   return [
-    { id: 't1', title: 'בדיקת אינטגרציה עם DPC אחרי עדכון גרסה', status: 'בתהליך', priority: 'גבוהה', against: 'וואלה טורס', contact: 'צחי לוי', notes: 'לבצע end-to-end ב-DPC ולוודא API יוצא תקין', created: '2025-01-08' },
-    { id: 't2', title: 'הגדרת גורם עסקי/שיווק להסלמות שת"פ', status: 'פתוחה', priority: 'בינונית', against: 'פנימי', contact: '', notes: 'חסר ממלא תפקיד בטבלת הסלמה — להשלים', created: '2025-01-07' },
-    { id: 't3', title: 'בחינת שיפור תהליך notice לשותפים לפני שחרור גרסה', status: 'פתוחה', priority: 'נמוכה', against: 'פנימי', contact: 'מיטל בן אהרון', notes: 'כרגע "basic notice" — לשקול מבנה מפורט יותר', created: '2025-01-06' }
+    { id: 't1', title: 'אליס', status: 'פתוחה', priority: 'גבוהה', against: 'מיטל בן אהרון', contact: 'מיטל בן אהרון', notes: 'אנחנו רוצים להגביר את כמות המכירות של אליס באמצעות הפעולות הבאות: הספת הנחה של 10% לכלל החבילות עדכון הטבה ללקוחות "פרמיום" ל 3 שלושה ימים ללא עלות לכלל הלקוחות שהגיעו במייל השיווקי - שלושה ימים חינם לבעל הפוליסה', created: '2026-03-11' },
+    { id: 't2', title: 'איש קשר לפוליסת סוכנים', status: 'תקועה', priority: 'גבוהה', against: 'מיטל בן אהרון', contact: 'מיטל בן אהרון', notes: 'יש לא מעט פעמים שלקוח מנסה להיכנס לאפליקציה / לפנות למוקד לטובת הפעלת הביטוח וה OTP (קוד הזדהות) נשלח לנייד שמעודכן אצלנו במערכות ולא לפי מה שמתקבל עלידי הסוכנים', created: '2026-03-11' },
+    { id: 't3', title: 'הצגת מחיר לסוכנים בשקלים ולא רק דולר', status: 'תקועה', priority: 'גבוהה', against: 'מיטל בן אהרון', contact: 'מיטל בן אהרון', notes: 'נכון להיום סוכנים רואים מחיר רק בדולרים בעצמו ולא מעצמו לקוחות שואלים את הסוכנים כמה הביטוח בשקל והם לא יודעים לענות להם על זה', created: '2026-03-11' },
+    { id: 't4', title: 'טיפול בהנחת כלל הלקוחות בשת"פ Sky Gini', status: 'תקועה', priority: 'גבוהה', against: 'מיטל בן אהרון', contact: 'מיטל בן אהרון', notes: 'אנחנו מחוייבים לספק הנחה של 20% לכלל הלקוחות דרר סקיי ג\'יני כרגע זה מתקבל רק אצל הלקוח הראשי', created: '2025-01-08' },
+    { id: 't5', title: 'גוליבר - עדכון הנחות ושינוי העמלה', status: 'תקועה', priority: 'גבוהה', against: 'פנימי', contact: 'מיטל בן אהרון', notes: 'הארכה של מיטל - יום פיתוח אחד, ממתינים לגרסא הבאה (מאי)', created: '2025-01-07' },
+    { id: 't6', title: 'משימת אודם עם לינק שמושך את כלל הפרטים של הנסיעה והלקוח - פלאפון פרטנר', status: 'תקועה', priority: 'גבוהה', against: 'פנימי', contact: 'מיטל בן אהרון', notes: 'כמו שיש היום ללקוחות לינק שמושך פרטים ישיר שנוטש את התהליך אנחנו רוצים לנצג במוקד לינק יעודי ונפתח גם אצל הלקוח וגם אצל פלאפון ופרטנר', created: '2025-01-06' }
   ];
 }
 
@@ -651,7 +701,8 @@ function statusBadge(s) {
   return `<span style="padding:2px 9px;border-radius:20px;font-size:11.5px;font-weight:700;${style}">${s}</span>`;
 }
 
-function renderOpenTasks() {
+function renderOpenTasks(activeFilter) {
+  activeFilter = activeFilter || 'הכל';
   const tasks = loadTasks();
   const counts = { total: tasks.length, open: 0, wip: 0, stuck: 0, done: 0 };
   tasks.forEach(t => {
@@ -661,18 +712,29 @@ function renderOpenTasks() {
     else if (t.status==='הושלמה') counts.done++;
   });
 
-  const stats = `
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
-      <div style="background:var(--bg-card2);border-radius:8px;padding:7px 14px;font-size:12.5px;display:flex;align-items:center;gap:8px"><span style="font-size:17px;font-weight:800">${counts.total}</span> סה"כ</div>
-      <div style="background:rgba(234,179,8,.1);border-radius:8px;padding:7px 14px;font-size:12.5px;display:flex;align-items:center;gap:8px;color:#eab308"><span style="font-size:17px;font-weight:800">${counts.open}</span> פתוחות</div>
-      <div style="background:rgba(91,108,240,.1);border-radius:8px;padding:7px 14px;font-size:12.5px;display:flex;align-items:center;gap:8px;color:#8899ff"><span style="font-size:17px;font-weight:800">${counts.wip}</span> בתהליך</div>
-      <div style="background:rgba(239,68,68,.1);border-radius:8px;padding:7px 14px;font-size:12.5px;display:flex;align-items:center;gap:8px;color:#ef4444"><span style="font-size:17px;font-weight:800">${counts.stuck}</span> תקועות</div>
-      <div style="background:rgba(34,197,94,.1);border-radius:8px;padding:7px 14px;font-size:12.5px;display:flex;align-items:center;gap:8px;color:#22c55e"><span style="font-size:17px;font-weight:800">${counts.done}</span> הושלמו</div>
-    </div>`;
+  const filters = [
+    { label: 'הכל',    count: counts.total, color: 'var(--muted)' },
+    { label: 'פתוחה',  count: counts.open,  color: '#eab308' },
+    { label: 'בתהליך', count: counts.wip,   color: '#8899ff' },
+    { label: 'תקועה',  count: counts.stuck, color: '#ef4444' },
+    { label: 'הושלמה', count: counts.done,  color: '#22c55e' },
+  ];
 
-  const tasksHTML = tasks.length === 0
-    ? `<div style="text-align:center;padding:32px;color:var(--muted)">אין משימות עדיין</div>`
-    : tasks.map(t => `
+  const filterBar = `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
+    ${filters.map(f => {
+      const active = activeFilter === f.label;
+      return `<button onclick="otSetFilter('${f.label}')"
+        style="padding:5px 13px;border-radius:20px;font-size:12.5px;font-weight:700;cursor:pointer;border:1px solid ${active ? f.color : 'var(--border-c)'};background:${active ? f.color+'22' : 'var(--bg-card2)'};color:${active ? f.color : 'var(--muted)'}">
+        ${f.label} <span style="opacity:.7">${f.count}</span>
+      </button>`;
+    }).join('')}
+  </div>`;
+
+  const filtered = activeFilter === 'הכל' ? tasks : tasks.filter(t => t.status === activeFilter);
+
+  const tasksHTML = filtered.length === 0
+    ? `<div style="text-align:center;padding:32px;color:var(--muted)">אין משימות בסטטוס זה</div>`
+    : filtered.map(t => `
       <div class="ot-card" id="ot-card-${t.id}" style="background:var(--bg-card2);border-radius:10px;padding:14px 16px;margin-bottom:10px;border:1px solid var(--border-c)">
         <div style="display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:start;cursor:pointer" onclick="otToggleEdit('${t.id}')">
           ${priorityDot(t.priority)}
@@ -733,18 +795,39 @@ function renderOpenTasks() {
     <div class="card" style="margin-top:0">
       <div class="card-head">📋 משימות פתוחות</div>
       <p style="font-size:13px;color:var(--muted);margin-bottom:14px">מעקב ועריכה ישירה של משימות ותהליכים</p>
-      ${stats}
+      ${filterBar}
       <div id="ot-list">${tasksHTML}</div>
       <button onclick="otAddNew()" style="margin-top:4px;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:13.5px;font-weight:700;cursor:pointer;width:100%">＋ משימה חדשה</button>
     </div>`;
 }
 
 function initOpenTasks() {
+  let currentFilter = 'הכל';
+
+  window.otSetFilter = function(f) {
+    currentFilter = f;
+    const main = document.getElementById('main');
+    main.innerHTML = renderOpenTasks(currentFilter) + renderSection('versions');
+    initChecks();
+    initOpenTasks();
+    window._otCurrentFilter = currentFilter;
+  };
+
+  // restore filter if exists
+  if (window._otCurrentFilter) currentFilter = window._otCurrentFilter;
+
   window.otToggleEdit = function(id) {
     const el = document.getElementById(`ot-edit-${id}`);
     if (!el) return;
     el.style.display = el.style.display === 'none' ? 'block' : 'none';
   };
+
+  function otRerender() {
+    const main = document.getElementById('main');
+    main.innerHTML = renderOpenTasks(window._otCurrentFilter || 'הכל') + renderSection('versions');
+    initChecks();
+    initOpenTasks();
+  }
 
   window.otSave = function(id) {
     const tasks = loadTasks();
@@ -758,38 +841,23 @@ function initOpenTasks() {
     t.notes    = document.getElementById(`ot-notes-${id}`).value.trim();
     saveTasks(tasks);
     showToast('נשמר ✓');
-    // re-render just the open tasks section
-    const card = document.getElementById(`ot-card-${id}`);
-    if (card) card.outerHTML = renderOpenTasks().match(new RegExp(`<div class="ot-card" id="ot-card-${id}"[\\s\\S]*?(?=<div class="ot-card"|<button onclick="otAddNew)`))?.[0] || '';
-    // easier: just refresh the entire ot-list
-    const main = document.getElementById('main');
-    const versHTML = renderOpenTasks() + renderSection('versions');
-    main.innerHTML = versHTML;
-    initChecks();
-    initOpenTasks();
+    otRerender();
   };
 
   window.otDelete = function(id) {
     if (!confirm('למחוק את המשימה?')) return;
-    const tasks = loadTasks().filter(t => t.id !== id);
-    saveTasks(tasks);
+    saveTasks(loadTasks().filter(t => t.id !== id));
     showToast('נמחק');
-    const main = document.getElementById('main');
-    main.innerHTML = renderOpenTasks() + renderSection('versions');
-    initChecks();
-    initOpenTasks();
+    otRerender();
   };
 
   window.otAddNew = function() {
+    window._otCurrentFilter = 'הכל';
     const tasks = loadTasks();
     const t = { id: taskUID(), title: 'משימה חדשה', status: 'פתוחה', priority: 'בינונית', against: '', contact: '', notes: '', created: new Date().toISOString().split('T')[0] };
     tasks.unshift(t);
     saveTasks(tasks);
-    const main = document.getElementById('main');
-    main.innerHTML = renderOpenTasks() + renderSection('versions');
-    initChecks();
-    initOpenTasks();
-    // auto-open edit for new task
+    otRerender();
     setTimeout(() => {
       const el = document.getElementById(`ot-edit-${t.id}`);
       if (el) el.style.display = 'block';
@@ -1069,31 +1137,33 @@ function renderAgencies() {
   }
 
   const companiesHTML = companies.map(co => `
-    <div class="ag-company" style="--co-accent:${co.accent};--co-grad:${co.gradient}">
-      <div class="ag-co-header">
-        <div class="ag-co-icon">${co.icon}</div>
-        <div class="ag-co-info">
-          <div class="ag-co-name">${co.name}</div>
-          <span class="ag-sys-badge" style="background:${co.systemColor}22;color:${co.systemColor};border:1px solid ${co.systemColor}44">${co.system}</span>
+    <div style="border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.08);margin-bottom:16px;background:var(--bg-card)">
+      <div style="background:${co.gradient};padding:18px 20px;display:flex;align-items:center;gap:14px">
+        <div style="width:48px;height:48px;background:rgba(255,255,255,.15);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">${co.icon}</div>
+        <div style="flex:1">
+          <div style="font-size:18px;font-weight:800;color:#fff;margin-bottom:4px">${co.name}</div>
+          <span style="font-size:11px;font-weight:700;padding:2px 10px;border-radius:20px;background:${co.systemColor}33;color:${co.accent};border:1px solid ${co.systemColor}55">${co.system}</span>
         </div>
-        <div class="ag-branch-count">${co.branches.length} סניפים</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.5);background:rgba(255,255,255,.1);padding:5px 12px;border-radius:20px">${co.branches.length} סניפים</div>
       </div>
-      <div class="ag-branches">
-        ${co.branches.map(b => `
-          <div class="ag-branch">
-            <div class="ag-city">
-              <span class="ag-city-dot"></span>
-              ${b.city}
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr))">
+        ${co.branches.map((b,i) => `
+          <div style="padding:14px 16px;border-left:1px solid rgba(255,255,255,.05);border-bottom:1px solid rgba(255,255,255,.05);transition:background .15s" 
+               onmouseover="this.style.background='rgba(255,255,255,.04)'" 
+               onmouseout="this.style.background='transparent'">
+            <div style="display:flex;align-items:center;gap:7px;margin-bottom:7px">
+              <span style="width:7px;height:7px;border-radius:50%;background:${co.accent};flex-shrink:0;display:inline-block"></span>
+              <span style="font-size:13px;font-weight:700;color:var(--fg)">${b.city}</span>
             </div>
-            <div class="ag-detail">👤 ${b.manager}</div>
+            <div style="font-size:12px;color:var(--muted);padding-right:14px">👤 ${b.manager}</div>
           </div>`).join('')}
       </div>
     </div>`).join('');
 
   return `
     <div class="page-title">🏢 סוכנויות</div>
-    <div class="page-sub">חברות, סניפים ואנשי קשר — לחץ ✏️ לעריכה</div>
-    <div class="ag-grid">${companiesHTML}</div>
+    <div class="page-sub">חברות, סניפים ומנהלים</div>
+    <div>${companiesHTML}</div>
     <div style="margin-top:8px">${sectionContent}</div>`;
 }
 
