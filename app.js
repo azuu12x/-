@@ -103,7 +103,7 @@ function renderHome() {
     {page:'negotiations',icon:'🤝',title:'שת״פים במו״מ',desc:'סטטוס שיתופי פעולה'},
     {page:'contacts',icon:'👥',title:'אנשי קשר',desc:'פנימי וחיצוני'},
     {page:'scenarios',icon:'🎯',title:'תרחישים',desc:'3 תרחישים אינטרקטיביים'},
-    {page:'quiz',icon:'🧠',title:'קוויז (12)',desc:'בדוק את עצמך'},
+    {page:'quiz',icon:'🧠',title:`קוויז (${DATA.quiz.length})`,desc:'בדוק את עצמך'},
   ].map(c=>`<div class="qnav-card" onclick="nav('#${c.page}')">
     <span class="qnav-icon">${c.icon}</span>
     <div class="qnav-title">${c.title}</div>
