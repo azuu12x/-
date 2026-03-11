@@ -56,7 +56,7 @@ function render() {
   const main = document.getElementById('main');
   switch(page) {
     case 'home': main.innerHTML = renderHome(); break;
-    case 'agencies': main.innerHTML = renderSection('agencies'); initChecks(); break;
+    case 'agencies': main.innerHTML = renderAgencies(); initChecks(); break;
     case 'service': main.innerHTML = renderSection('service'); break;
     case 'escalation': main.innerHTML = renderSection('escalation'); break;
     case 'versions': main.innerHTML = renderOpenTasks() + renderSection('versions'); initChecks(); initOpenTasks(); break;
@@ -956,3 +956,146 @@ function initNegotiations() {
     }, 50);
   };
 }
+
+// ===== AGENCIES PAGE =====
+function renderAgencies() {
+  // Mark as visited
+  if (!progress.modules.includes('agencies')) {
+    progress.modules.push('agencies');
+    saveProgress();
+    updateMiniProg();
+  }
+
+  const companies = [
+    {
+      id: 'issta',
+      name: 'איסתא',
+      system: 'Travel Booster',
+      systemColor: '#6366f1',
+      icon: '✈️',
+      gradient: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)',
+      accent: '#818cf8',
+      branches: [
+        { city: 'תל אביב',        manager: 'לילך סימנא' },
+        { city: 'תל אביב מוקד',   manager: 'בטי ברשי' },
+        { city: 'ראשון לציון',    manager: 'מיטל שיוביץ\'' },
+        { city: 'בת ים',          manager: 'מיטל שיוביץ\'' },
+        { city: 'רחובות',         manager: 'מאיה חשאי' },
+        { city: 'אשדוד',          manager: 'לינדה חסון' },
+        { city: 'באר שבע',        manager: 'מאיה חשאי' },
+        { city: 'אילת',           manager: 'ענת אציל' },
+        { city: 'ירושלים',        manager: 'ניסים כהן' },
+        { city: 'כפר סבא',        manager: 'אפרת בוקצין' },
+        { city: 'חדרה',           manager: 'אפרת בוקצין' },
+        { city: 'חיפה',           manager: 'כפיר אלחנן' },
+        { city: 'קריית מוצקין',   manager: 'כפיר אלחנן' },
+        { city: 'עפולה',          manager: 'גלית ינוביץ' },
+      ]
+    },
+    {
+      id: 'talma',
+      name: 'תלמה',
+      system: 'Travel Booster',
+      systemColor: '#6366f1',
+      icon: '🌍',
+      gradient: 'linear-gradient(135deg, #064e3b 0%, #065f46 100%)',
+      accent: '#34d399',
+      branches: [
+        { city: 'תל אביב',          manager: 'אילנה אלבון' },
+        { city: 'ראשון לציון',      manager: 'ורדה מרטיני' },
+        { city: 'אשדוד',            manager: 'ורדה מרטיני' },
+        { city: 'כפר סבא',          manager: 'רוני מרגלית' },
+        { city: 'רמת ישי',          manager: 'אייל כרמי' },
+        { city: 'טבריה',            manager: 'רובי חנוכה' },
+        { city: 'מעלות תרשיחא',    manager: 'רוויטל שוורץ' },
+      ]
+    },
+    {
+      id: 'amex',
+      name: 'אמקס',
+      system: 'Travel Booster',
+      systemColor: '#6366f1',
+      icon: '💳',
+      gradient: 'linear-gradient(135deg, #1c1917 0%, #292524 100%)',
+      accent: '#fbbf24',
+      branches: [
+        { city: 'תל אביב', manager: 'שיר רוגן' },
+        { city: 'נהריה',   manager: 'שיר רוגן' },
+        { city: 'עפולה',   manager: 'ברכה שלם' },
+      ]
+    },
+    {
+      id: 'walla',
+      name: 'וואלה טורס',
+      system: 'DPC',
+      systemColor: '#f97316',
+      icon: '🔥',
+      gradient: 'linear-gradient(135deg, #431407 0%, #7c2d12 100%)',
+      accent: '#fb923c',
+      branches: [
+        { city: 'תל אביב', manager: 'צחי לוי' },
+      ]
+    },
+    {
+      id: 'issta-sport',
+      name: 'איסתא ספורט',
+      system: 'DPC',
+      systemColor: '#f97316',
+      icon: '⚽',
+      gradient: 'linear-gradient(135deg, #0c4a6e 0%, #075985 100%)',
+      accent: '#38bdf8',
+      branches: [
+        { city: 'תל אביב', manager: 'עמית חרזי' },
+      ]
+    }
+  ];
+
+  // Also render the existing section content (API, flow, etc.) below
+  const sec = DATA.sections.find(s => s.id === 'agencies');
+  let sectionContent = '';
+  if (sec) {
+    sec.subsections.forEach(sub => {
+      sectionContent += `<div class="card">`;
+      sectionContent += `<div class="card-head">${sub.title}</div>`;
+      if (sub.content) sectionContent += `<p style="font-size:13.5px;color:var(--muted);line-height:1.7;margin-bottom:10px">${sub.content}</p>`;
+      if (sub.table) sectionContent += renderTable(sub.table);
+      if (sub.flow) sectionContent += renderFlow(sub.flow);
+      if (sub.bullets) sectionContent += renderBullets(sub.bullets);
+      if (sub.checklist) sectionContent += renderChecklist(sub.checklist, 'agencies');
+      if (sub.tip) sectionContent += `<div class="tip">💡 ${sub.tip}</div>`;
+      if (sub.warning) sectionContent += `<div class="warning">⚠️ ${sub.warning}</div>`;
+      sectionContent += `</div>`;
+    });
+  }
+
+  const companiesHTML = companies.map(co => `
+    <div class="ag-company" style="--co-accent:${co.accent};--co-grad:${co.gradient}">
+      <div class="ag-co-header">
+        <div class="ag-co-icon">${co.icon}</div>
+        <div class="ag-co-info">
+          <div class="ag-co-name">${co.name}</div>
+          <span class="ag-sys-badge" style="background:${co.systemColor}22;color:${co.systemColor};border:1px solid ${co.systemColor}44">${co.system}</span>
+        </div>
+        <div class="ag-branch-count">${co.branches.length} סניפים</div>
+      </div>
+      <div class="ag-branches">
+        ${co.branches.map(b => `
+          <div class="ag-branch">
+            <div class="ag-city">
+              <span class="ag-city-dot"></span>
+              ${b.city}
+            </div>
+            <div class="ag-detail">👤 ${b.manager}</div>
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
+
+  return `
+    <div class="page-title">🏢 סוכנויות</div>
+    <div class="page-sub">חברות, סניפים ואנשי קשר — לחץ ✏️ לעריכה</div>
+    <div class="ag-grid">${companiesHTML}</div>
+    <div style="margin-top:8px">${sectionContent}</div>`;
+}
+
+
+
