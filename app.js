@@ -1069,31 +1069,33 @@ function renderAgencies() {
   }
 
   const companiesHTML = companies.map(co => `
-    <div class="ag-company" style="--co-accent:${co.accent};--co-grad:${co.gradient}">
-      <div class="ag-co-header">
-        <div class="ag-co-icon">${co.icon}</div>
-        <div class="ag-co-info">
-          <div class="ag-co-name">${co.name}</div>
-          <span class="ag-sys-badge" style="background:${co.systemColor}22;color:${co.systemColor};border:1px solid ${co.systemColor}44">${co.system}</span>
+    <div style="border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.08);margin-bottom:16px;background:var(--bg-card)">
+      <div style="background:${co.gradient};padding:18px 20px;display:flex;align-items:center;gap:14px">
+        <div style="width:48px;height:48px;background:rgba(255,255,255,.15);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">${co.icon}</div>
+        <div style="flex:1">
+          <div style="font-size:18px;font-weight:800;color:#fff;margin-bottom:4px">${co.name}</div>
+          <span style="font-size:11px;font-weight:700;padding:2px 10px;border-radius:20px;background:${co.systemColor}33;color:${co.accent};border:1px solid ${co.systemColor}55">${co.system}</span>
         </div>
-        <div class="ag-branch-count">${co.branches.length} סניפים</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.5);background:rgba(255,255,255,.1);padding:5px 12px;border-radius:20px">${co.branches.length} סניפים</div>
       </div>
-      <div class="ag-branches">
-        ${co.branches.map(b => `
-          <div class="ag-branch">
-            <div class="ag-city">
-              <span class="ag-city-dot"></span>
-              ${b.city}
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr))">
+        ${co.branches.map((b,i) => `
+          <div style="padding:14px 16px;border-left:1px solid rgba(255,255,255,.05);border-bottom:1px solid rgba(255,255,255,.05);transition:background .15s" 
+               onmouseover="this.style.background='rgba(255,255,255,.04)'" 
+               onmouseout="this.style.background='transparent'">
+            <div style="display:flex;align-items:center;gap:7px;margin-bottom:7px">
+              <span style="width:7px;height:7px;border-radius:50%;background:${co.accent};flex-shrink:0;display:inline-block"></span>
+              <span style="font-size:13px;font-weight:700;color:var(--fg)">${b.city}</span>
             </div>
-            <div class="ag-detail">👤 ${b.manager}</div>
+            <div style="font-size:12px;color:var(--muted);padding-right:14px">👤 ${b.manager}</div>
           </div>`).join('')}
       </div>
     </div>`).join('');
 
   return `
     <div class="page-title">🏢 סוכנויות</div>
-    <div class="page-sub">חברות, סניפים ואנשי קשר — לחץ ✏️ לעריכה</div>
-    <div class="ag-grid">${companiesHTML}</div>
+    <div class="page-sub">חברות, סניפים ומנהלים</div>
+    <div>${companiesHTML}</div>
     <div style="margin-top:8px">${sectionContent}</div>`;
 }
 
