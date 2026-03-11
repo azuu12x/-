@@ -498,12 +498,59 @@ ${DATA.scenarios.map(s => {
 </div>
 <div style="margin-top:24px">
   <button class="btn btn-danger btn-sm" onclick="if(confirm('לאפס הכל?')){resetAll()}">🗑️ איפוס כל ההתקדמות</button>
+</div>
+<div class="card" style="margin-top:20px">
+  <div class="card-head">📲 סנכרון בין מכשירים</div>
+  <p style="font-size:13px;color:var(--muted);margin-bottom:14px">ייצא את כל הנתונים מהמחשב וייבא בנייד (משימות, שת״פים, התקדמות)</p>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <button onclick="syncExport()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:13.5px;font-weight:700;cursor:pointer">📤 ייצא לקובץ</button>
+    <label style="background:var(--bg-card2);border:1px solid var(--border-c);border-radius:8px;padding:9px 18px;font-size:13.5px;font-weight:700;cursor:pointer;color:var(--fg)">
+      📥 ייבא קובץ
+      <input type="file" accept=".json" onchange="syncImport(event)" style="display:none"/>
+    </label>
+  </div>
 </div>`;
 }
 
 window.resetAll = function() {
   progress.modules = []; progress.quizDone = {}; progress.scenarios = []; progress.checks = {};
+  localStorage.removeItem('elad_open_tasks_v1');
+  localStorage.removeItem('elad_negotiations_v1');
   saveProgress(); updateMiniProg(); render(); showToast('אופס!');
+};
+
+window.syncExport = function() {
+  const allKeys = ['elad_v2_progress','elad_open_tasks_v1','elad_negotiations_v1'];
+  const dump = {};
+  allKeys.forEach(k => {
+    const v = localStorage.getItem(k);
+    if (v) dump[k] = v;
+  });
+  const blob = new Blob([JSON.stringify(dump, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'elad_sync_' + new Date().toISOString().split('T')[0] + '.json';
+  a.click();
+  showToast('קובץ יוצא ✓');
+};
+
+window.syncImport = function(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const dump = JSON.parse(e.target.result);
+      Object.entries(dump).forEach(([k, v]) => localStorage.setItem(k, v));
+      // Reload progress into memory
+      loadProgress();
+      render();
+      showToast('יובא בהצלחה ✓');
+    } catch(err) {
+      showToast('שגיאה בייבוא');
+    }
+  };
+  reader.readAsText(file);
 };
 
 // ===== SEARCH =====
@@ -627,9 +674,12 @@ function saveTasks(tasks) {
 }
 function defaultTasks() {
   return [
-    { id: 't1', title: 'בדיקת אינטגרציה עם DPC אחרי עדכון גרסה', status: 'בתהליך', priority: 'גבוהה', against: 'וואלה טורס', contact: 'צחי לוי', notes: 'לבצע end-to-end ב-DPC ולוודא API יוצא תקין', created: '2025-01-08' },
-    { id: 't2', title: 'הגדרת גורם עסקי/שיווק להסלמות שת"פ', status: 'פתוחה', priority: 'בינונית', against: 'פנימי', contact: '', notes: 'חסר ממלא תפקיד בטבלת הסלמה — להשלים', created: '2025-01-07' },
-    { id: 't3', title: 'בחינת שיפור תהליך notice לשותפים לפני שחרור גרסה', status: 'פתוחה', priority: 'נמוכה', against: 'פנימי', contact: 'מיטל בן אהרון', notes: 'כרגע "basic notice" — לשקול מבנה מפורט יותר', created: '2025-01-06' }
+    { id: 't1', title: 'אליס', status: 'פתוחה', priority: 'גבוהה', against: 'מיטל בן אהרון', contact: 'מיטל בן אהרון', notes: 'אנחנו רוצים להגביר את כמות המכירות של אליס באמצעות הפעולות הבאות: הספת הנחה של 10% לכלל החבילות עדכון הטבה ללקוחות "פרמיום" ל 3 שלושה ימים ללא עלות לכלל הלקוחות שהגיעו במייל השיווקי - שלושה ימים חינם לבעל הפוליסה', created: '2026-03-11' },
+    { id: 't2', title: 'איש קשר לפוליסת סוכנים', status: 'תקועה', priority: 'גבוהה', against: 'מיטל בן אהרון', contact: 'מיטל בן אהרון', notes: 'יש לא מעט פעמים שלקוח מנסה להיכנס לאפליקציה / לפנות למוקד לטובת הפעלת הביטוח וה OTP (קוד הזדהות) נשלח לנייד שמעודכן אצלנו במערכות ולא לפי מה שמתקבל עלידי הסוכנים', created: '2026-03-11' },
+    { id: 't3', title: 'הצגת מחיר לסוכנים בשקלים ולא רק דולר', status: 'תקועה', priority: 'גבוהה', against: 'מיטל בן אהרון', contact: 'מיטל בן אהרון', notes: 'נכון להיום סוכנים רואים מחיר רק בדולרים בעצמו ולא מעצמו לקוחות שואלים את הסוכנים כמה הביטוח בשקל והם לא יודעים לענות להם על זה', created: '2026-03-11' },
+    { id: 't4', title: 'טיפול בהנחת כלל הלקוחות בשת"פ Sky Gini', status: 'תקועה', priority: 'גבוהה', against: 'מיטל בן אהרון', contact: 'מיטל בן אהרון', notes: 'אנחנו מחוייבים לספק הנחה של 20% לכלל הלקוחות דרר סקיי ג\'יני כרגע זה מתקבל רק אצל הלקוח הראשי', created: '2025-01-08' },
+    { id: 't5', title: 'גוליבר - עדכון הנחות ושינוי העמלה', status: 'תקועה', priority: 'גבוהה', against: 'פנימי', contact: 'מיטל בן אהרון', notes: 'הארכה של מיטל - יום פיתוח אחד, ממתינים לגרסא הבאה (מאי)', created: '2025-01-07' },
+    { id: 't6', title: 'משימת אודם עם לינק שמושך את כלל הפרטים של הנסיעה והלקוח - פלאפון פרטנר', status: 'תקועה', priority: 'גבוהה', against: 'פנימי', contact: 'מיטל בן אהרון', notes: 'כמו שיש היום ללקוחות לינק שמושך פרטים ישיר שנוטש את התהליך אנחנו רוצים לנצג במוקד לינק יעודי ונפתח גם אצל הלקוח וגם אצל פלאפון ופרטנר', created: '2025-01-06' }
   ];
 }
 
