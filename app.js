@@ -61,6 +61,7 @@ function render() {
     case 'escalation': main.innerHTML = renderSection('escalation'); break;
     case 'versions': main.innerHTML = renderOpenTasks() + renderSection('versions'); initChecks(); initOpenTasks(); break;
     case 'partners': main.innerHTML = renderSection('partners'); break;
+    case 'negotiations': main.innerHTML = renderNegotiations(); initNegotiations(); break;
     case 'contacts': main.innerHTML = renderContacts(); initContacts(); break;
     case 'scenarios': renderScenariosPage(main, id); break;
     case 'quiz': renderQuizPage(main, id); break;
@@ -99,6 +100,7 @@ function renderHome() {
     {page:'escalation',icon:'🆘',title:'הסלמה',desc:'מי מטפל במה'},
     {page:'versions',icon:'🔧',title:'גרסאות',desc:"צ'קליסט לפני/אחרי"},
     {page:'partners',icon:'🔗',title:'שת״פים',desc:'לינק צבוע, התנגשות מחיר'},
+    {page:'negotiations',icon:'🤝',title:'שת״פים במו״מ',desc:'סטטוס שיתופי פעולה'},
     {page:'contacts',icon:'👥',title:'אנשי קשר',desc:'פנימי וחיצוני'},
     {page:'scenarios',icon:'🎯',title:'תרחישים',desc:'3 תרחישים אינטרקטיביים'},
     {page:'quiz',icon:'🧠',title:'קוויז (12)',desc:'בדוק את עצמך'},
@@ -776,6 +778,166 @@ function initOpenTasks() {
     setTimeout(() => {
       const el = document.getElementById(`ot-edit-${t.id}`);
       if (el) el.style.display = 'block';
+    }, 50);
+  };
+}
+
+// ===== NEGOTIATIONS =====
+const NEG_KEY = 'elad_negotiations_v1';
+
+function loadNegs() {
+  try { const s = localStorage.getItem(NEG_KEY); return s ? JSON.parse(s) : defaultNegs(); } catch(e) { return defaultNegs(); }
+}
+function saveNegs(items) {
+  try { localStorage.setItem(NEG_KEY, JSON.stringify(items)); } catch(e) {}
+}
+function defaultNegs() {
+  return [
+    { id: 'n1', name: '', type: '', status: 'בבחינה', contact: '', notes: '', created: new Date().toISOString().split('T')[0] }
+  ];
+}
+function negUID() { return 'n' + Date.now(); }
+
+function negStatusBadge(s) {
+  const map = {
+    'בבחינה':    'background:rgba(234,179,8,.15);color:#eab308',
+    'במו״מ פעיל':'background:rgba(91,108,240,.15);color:#8899ff',
+    'ממתין לחתימה':'background:rgba(249,115,22,.15);color:#f97316',
+    'פעיל':      'background:rgba(34,197,94,.15);color:#22c55e',
+    'הוקפא':     'background:rgba(156,163,175,.15);color:#9ca3af',
+    'בוטל':      'background:rgba(239,68,68,.15);color:#ef4444'
+  };
+  const style = map[s] || map['בבחינה'];
+  return `<span style="padding:2px 9px;border-radius:20px;font-size:11.5px;font-weight:700;${style}">${s}</span>`;
+}
+
+const NEG_STATUSES = ['בבחינה','במו״מ פעיל','ממתין לחתימה','פעיל','הוקפא','בוטל'];
+const NEG_TYPES = ['תקשורת','תעופה','פיננסים','נסיעות','מועדון','אחר'];
+
+function renderNegotiations() {
+  const items = loadNegs();
+
+  const countByStatus = {};
+  NEG_STATUSES.forEach(s => countByStatus[s] = 0);
+  items.forEach(i => { if (countByStatus[i.status] !== undefined) countByStatus[i.status]++; });
+
+  const stats = `
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+      ${NEG_STATUSES.map(s => `
+        <div style="background:var(--bg-card2);border-radius:8px;padding:6px 12px;font-size:12px;display:flex;align-items:center;gap:7px">
+          <span style="font-size:16px;font-weight:800">${countByStatus[s]}</span>
+          ${negStatusBadge(s)}
+        </div>`).join('')}
+    </div>`;
+
+  const list = items.length === 0
+    ? `<div style="text-align:center;padding:32px;color:var(--muted)">אין שת״פים עדיין</div>`
+    : items.map(item => `
+      <div style="background:var(--bg-card2);border-radius:10px;padding:14px 16px;margin-bottom:10px;border:1px solid var(--border-c)" id="neg-card-${item.id}">
+        <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:start">
+          <div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px">
+              <span style="font-size:14px;font-weight:700">${item.name || '(ללא שם)'}</span>
+              ${negStatusBadge(item.status)}
+              ${item.type ? `<span style="background:var(--bg-card2);border:1px solid var(--border-c);padding:2px 9px;border-radius:20px;font-size:11.5px;color:var(--muted)">${item.type}</span>` : ''}
+            </div>
+            ${item.contact ? `<div style="font-size:12.5px;color:var(--muted);margin-bottom:3px">👤 ${item.contact}</div>` : ''}
+            ${item.notes   ? `<div style="font-size:12.5px;color:var(--muted)">💬 ${item.notes}</div>` : ''}
+          </div>
+          <div style="display:flex;gap:5px">
+            <button onclick="negToggleEdit('${item.id}')" style="background:var(--bg-card2);border:1px solid var(--border-c);border-radius:7px;width:30px;height:30px;cursor:pointer;font-size:14px;color:var(--muted)" title="ערוך">✏️</button>
+            <button onclick="negDelete('${item.id}')" style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:7px;width:30px;height:30px;cursor:pointer;font-size:14px" title="מחק">🗑</button>
+          </div>
+        </div>
+
+        <div id="neg-edit-${item.id}" style="display:none;border-top:1px solid var(--border-c);margin-top:12px;padding-top:14px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px">
+            <div style="grid-column:1/-1">
+              <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">שם השת״פ / חברה</label>
+              <input id="neg-name-${item.id}" value="${item.name}" placeholder="שם החברה או הגוף" style="width:100%;background:var(--bg-card);border:1px solid var(--border-c);border-radius:7px;padding:8px 10px;color:var(--fg);font-size:13.5px;font-family:inherit"/>
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">סטטוס</label>
+              <select id="neg-status-${item.id}" style="width:100%;background:var(--bg-card);border:1px solid var(--border-c);border-radius:7px;padding:8px 10px;color:var(--fg);font-size:13.5px;font-family:inherit">
+                ${NEG_STATUSES.map(s=>`<option ${item.status===s?'selected':''}>${s}</option>`).join('')}
+              </select>
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">סוג</label>
+              <select id="neg-type-${item.id}" style="width:100%;background:var(--bg-card);border:1px solid var(--border-c);border-radius:7px;padding:8px 10px;color:var(--fg);font-size:13.5px;font-family:inherit">
+                <option value="">בחר סוג</option>
+                ${NEG_TYPES.map(t=>`<option ${item.type===t?'selected':''}>${t}</option>`).join('')}
+              </select>
+            </div>
+            <div style="grid-column:1/-1">
+              <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">איש קשר</label>
+              <input id="neg-contact-${item.id}" value="${item.contact}" placeholder="שם + תפקיד + טלפון" style="width:100%;background:var(--bg-card);border:1px solid var(--border-c);border-radius:7px;padding:8px 10px;color:var(--fg);font-size:13.5px;font-family:inherit"/>
+            </div>
+            <div style="grid-column:1/-1">
+              <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">הערות / עדכון אחרון</label>
+              <textarea id="neg-notes-${item.id}" rows="2" placeholder="מה קורה במו״מ, מה הצעד הבא..." style="width:100%;background:var(--bg-card);border:1px solid var(--border-c);border-radius:7px;padding:8px 10px;color:var(--fg);font-size:13.5px;font-family:inherit;resize:vertical">${item.notes}</textarea>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button onclick="negSave('${item.id}')" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13.5px;font-weight:700;cursor:pointer">💾 שמור</button>
+            <button onclick="negToggleEdit('${item.id}')" style="background:var(--bg-card2);border:1px solid var(--border-c);border-radius:8px;padding:8px 14px;font-size:13.5px;cursor:pointer;color:var(--fg)">ביטול</button>
+          </div>
+        </div>
+      </div>`).join('');
+
+  return `
+    <div class="page-title">🤝 שת״פים במו״מ</div>
+    <div class="page-sub">מעקב ועריכה ישירה של שיתופי פעולה בתהליך</div>
+    <div class="card">
+      ${stats}
+      <div id="neg-list">${list}</div>
+      <button onclick="negAddNew()" style="margin-top:4px;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:13.5px;font-weight:700;cursor:pointer;width:100%">＋ שת״פ חדש</button>
+    </div>`;
+}
+
+function negRerender() {
+  const main = document.getElementById('main');
+  main.innerHTML = renderNegotiations();
+  initNegotiations();
+}
+
+function initNegotiations() {
+  window.negToggleEdit = function(id) {
+    const el = document.getElementById(`neg-edit-${id}`);
+    if (!el) return;
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  };
+
+  window.negSave = function(id) {
+    const items = loadNegs();
+    const item = items.find(x => x.id === id);
+    if (!item) return;
+    item.name    = document.getElementById(`neg-name-${id}`).value.trim();
+    item.status  = document.getElementById(`neg-status-${id}`).value;
+    item.type    = document.getElementById(`neg-type-${id}`).value;
+    item.contact = document.getElementById(`neg-contact-${id}`).value.trim();
+    item.notes   = document.getElementById(`neg-notes-${id}`).value.trim();
+    saveNegs(items);
+    showToast('נשמר ✓');
+    negRerender();
+  };
+
+  window.negDelete = function(id) {
+    if (!confirm('למחוק את השת״פ?')) return;
+    saveNegs(loadNegs().filter(x => x.id !== id));
+    showToast('נמחק');
+    negRerender();
+  };
+
+  window.negAddNew = function() {
+    const items = loadNegs();
+    const newItem = { id: negUID(), name: '', type: '', status: 'בבחינה', contact: '', notes: '', created: new Date().toISOString().split('T')[0] };
+    items.unshift(newItem);
+    saveNegs(items);
+    negRerender();
+    setTimeout(() => {
+      const el = document.getElementById(`neg-edit-${newItem.id}`);
+      if (el) { el.style.display = 'block'; el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
     }, 50);
   };
 }
