@@ -325,8 +325,10 @@ window.pickScOpt = function(btn, scId) {
 
 // ===== QUIZ =====
 function renderQuizPage(main, id) {
-  // Simple: just one quiz
-  const questions = DATA.quiz;
+  // Pick 30 random questions each time
+  const QUIZ_SIZE = 30;
+  const shuffled = [...DATA.quiz].sort(() => Math.random() - 0.5);
+  const questions = shuffled.slice(0, Math.min(QUIZ_SIZE, shuffled.length));
   let qIdx = 0, score = 0, answered = new Array(questions.length).fill(null);
   const letters = ['א','ב','ג','ד'];
 
