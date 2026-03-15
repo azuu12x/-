@@ -405,6 +405,66 @@
       "phone": "054-6353450",
       "email": "Amithar@issta.co.il",
       "escalation": "כספים / DPC"
+    },
+    {
+      "id": "c14",
+      "name": "עוביידה",
+      "role": "מנהל מוצר",
+      "company": "Nassa",
+      "type": "external",
+      "phone": "054-9819111",
+      "email": "Obayda@3msoft.net",
+      "escalation": ""
+    },
+    {
+      "id": "c15",
+      "name": "כרמית עוז",
+      "role": "מנהלת מחלקת שתִלפים",
+      "company": "פלאפון",
+      "type": "external",
+      "phone": "050-8173244",
+      "email": "Carmitza@pelephone.co.il",
+      "escalation": ""
+    },
+    {
+      "id": "c16",
+      "name": "עידן בן עמי",
+      "role": "מנהל מחלקת סלולר פרטי",
+      "company": "פרטנר",
+      "type": "external",
+      "phone": "054-7367300",
+      "email": "Idan.ben-ami1@partner.co.il",
+      "escalation": ""
+    },
+    {
+      "id": "c17",
+      "name": "גלעד",
+      "role": "מנכִלל",
+      "company": "Fly Money",
+      "type": "external",
+      "phone": "054-6237447",
+      "email": "gilad@flymoney.com",
+      "escalation": ""
+    },
+    {
+      "id": "c18",
+      "name": "אלדד ינאי",
+      "role": "",
+      "company": "גוליבר",
+      "type": "external",
+      "phone": "054-5004480",
+      "email": "EldadY@guliver.co.il",
+      "escalation": ""
+    },
+    {
+      "id": "c19",
+      "name": "נעם",
+      "role": "מנהלת מוצר",
+      "company": "אליס+ Book A Flight",
+      "type": "external",
+      "phone": "",
+      "email": "Noamn@blackrabbit.com",
+      "escalation": ""
     }
   ],
   "scenarios": [
